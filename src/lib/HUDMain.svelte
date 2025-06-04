@@ -3,7 +3,9 @@
   import StatusDock from './widgets/StatusDock.svelte';
   import FloatingStream from './widgets/FloatingStream.svelte';
   import ResponseLeaf from './widgets/ResponseLeaf.svelte';
-  import { digitalProgress, analogProgress, projectProgress } from './store';
+  import PracticeQPortal from './widgets/PracticeQPortal.svelte';
+  import MindMapScreen from './widgets/MindMapScreen.svelte';
+  import { digitalProgress, analogProgress, projectProgress, appMode } from './store';
   import { sendToPerplexity } from './ai/perplexity';
   import RadialDial from './widgets/RadialDial.svelte';
   import { sendToStrategist } from './llm';
@@ -47,17 +49,21 @@
   </div>
   
   <FloatingStream />
-  <!-- Main Row: Welcome + Dials -->
-  <div class="hud-core-row">
-    <div class="welcome-wrapper">
-      <WelcomePortal />
+  {#if $appMode === 'home'}
+    <!-- Main Row: Welcome + Dials -->
+    <div class="hud-core-row">
+      <div class="welcome-wrapper">
+        <WelcomePortal />
+      </div>
+      <RadialDial label="Digital" percent={digital} />
+      <RadialDial label="Analog" percent={analog} />
+      <RadialDial label="Project" percent={project} />
     </div>
-    <RadialDial label="Digital" percent={digital} />
-    <RadialDial label="Analog" percent={analog} />
-    <RadialDial label="Project" percent={project} />
-
-
-  </div>
+  {:else if $appMode === 'practiceq'}
+    <PracticeQPortal />
+  {:else if $appMode === 'mindmap'}
+    <MindMapScreen />
+  {/if}
   {#if showResponse}
     <ResponseLeaf message={aiMessage} onClose={() => showResponse = false} />
   {/if}

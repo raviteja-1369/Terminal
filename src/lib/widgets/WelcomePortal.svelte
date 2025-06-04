@@ -1,7 +1,7 @@
 <script lang="ts">
   import { sendToPerplexity } from '../ai/perplexity';
   import ResponseLeaf from './ResponseLeaf.svelte';
-  import { welcomeText } from '../store';
+  import { welcomeText, appMode } from '../store';
   import { routeCommand } from '../CommandRouter'; // <-- import this
 
   let userInput = "";
@@ -9,8 +9,20 @@
   let showResponse = false;
 
  
- async function handleKeydown(event: KeyboardEvent) {
+async function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter' && userInput.trim()) {
+    const trimmed = userInput.trim().toLowerCase();
+    if (trimmed === 'practiceq') {
+      appMode.set('practiceq');
+      userInput = '';
+      return;
+    }
+    if (trimmed === 'mindmap') {
+      appMode.set('mindmap');
+      userInput = '';
+      return;
+    }
+
     showResponse = true;
     aiMessage = "Processing...";
 
