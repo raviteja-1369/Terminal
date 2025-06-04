@@ -1,0 +1,39 @@
+<script lang="ts">
+  import ChatWindow from './ChatWindow.svelte';
+  import ThoughtBox from './ThoughtBox.svelte';
+  import InputBar from './InputBar.svelte';
+  import { streamFromDeepSeek } from '../llm';
+
+  let chatLog: { sender: string; content: string }[] = [];
+  let thought = "";
+  let showThought = false;
+
+  async function handlePromptSubmit(prompt: string) {
+    chatLog.push({ sender: "user", content: prompt });
+
+    let finalAnswer = "";
+    showThought = false;
+    thought = "";
+
+    await streamFromDeepSeek(
+      prompt,
+      (chunk) => {
+        if (chunk.startsWith("THINK:")) {
+          thought = chunk.replace("THINK:", "");
+          showThought = true;
+        } else if (chunk.startsWith("CHAT:")) {
+          finalAnswer += chunk.replace("CHAT:", "");
+        }
+      },
+      (final) => {
+        showThought = false;
+        thought = "";
+        chatLog.push({ sender: "deepseek", content: final.trim() });
+      }
+    );
+  }
+</script>
+
+<div class="deepseek-screen">
+  <ChatWindow {chatLog} />
+  {#if showThou

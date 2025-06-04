@@ -1,0 +1,696 @@
+<script>
+  let last = JSON.parse(localStorage.getItem('activityFeed') || '{}');
+</script>
+<div class="widget">
+  <p class="widget-label">⏱️ Activity Feed</p>
+  {#if last.category}
+    <p class="widget-detail">{last.category} • {last.duration}</p>
+  {:else}
+    <p class="widget-detail">No session yet</p>
+  {/if}
+</div>
+<style>
+/* reuse .widget and .widget-label styles from SleepWidget */
+</style>
+<!-- src/lib/widgets/BottomWidget.svelte -->
+
+<script lang="ts">
+  import { lastJournal, lastSleep, lastActivity } from '../store';
+</script>
+
+  
+<div class="bottom-widget">
+  <div class="widget-box">📝 Journal: {$lastJournal}</div>
+  <div class="widget-box">😴 Sleep: {$lastSleep}</div>
+  <div class="widget-box">🧠 Last Activity: {$lastActivity}</div>
+</div>
+
+<style>
+  .bottom-widget {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .widget-box {
+    padding: 0.75rem 1.25rem;
+    background: rgba(0, 255, 238, 0.05);
+    border: 1px solid #00ffee88;
+    border-radius: 0.5rem;
+    color: #00ffee;
+    font-family: 'Orbitron', monospace;
+    font-size: 1.1rem;
+    box-shadow: 0 0 6px #00ffee66;
+    backdrop-filter: blur(3px);
+    min-width: 220px;
+    text-align: center;
+  }
+</style>
+<script lang="ts">
+  import { routeCommand } from '../CommandRouter';
+  import ResponseLeaf from './ResponseLeaf.svelte';
+
+  let userInput = "";
+  let aiMessage = "";
+  let showResponse = false;
+
+
+  import { handleAsk } from '../CommandRouter';
+
+async function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter' && userInput.trim()) {
+    aiMessage = "Processing...";
+    try {
+      aiMessage = await handleAsk(userInput);
+    } catch (err) {
+      aiMessage = "Error: " + err.message;
+    }
+    userInput = "";
+  }
+}
+
+</script>
+
+<div class="command-box">
+  <input
+    bind:value={userInput}
+    on:keydown={handleKeydown}
+    class="input-terminal"
+    placeholder="Enter command... (log, plan, ask, etc.)"
+  />
+
+  {#if showResponse}
+    <ResponseLeaf message={aiMessage} onClose={() => (showResponse = false)} />
+  {/if}
+</div>
+
+<style>
+  .command-box {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .input-terminal {
+    width: 100%;
+    padding: 0.8rem 1.2rem;
+    font-family: 'Fira Code', monospace;
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+  }
+
+  .input-terminal::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+</style>
+<script lang="ts">
+    import { onMount } from 'svelte';
+    import { memoryData } from '../memoryStore';
+  
+    let visibleItems: { text: string; id: number }[] = [];
+    let idCounter = 0;
+  
+    function pickRandomMemory(): string {
+     return "💬 TEST — Floating works!";
+   }
+
+    function pickRandomMemoryw(): string {
+      const all = [
+        ...memoryData.logs.map(e => e.content),
+        ...memoryData.todayTasks,
+        ...memoryData.focusItems
+      ];
+  
+      if (all.length === 0) {
+        console.warn("⚠️ No memory to float.");
+        return "🧠 No memory data yet. Start logging.";
+      }
+  
+      return all[Math.floor(Math.random() * all.length)];
+    }
+  
+    function addFloatingItem() {
+      const text = pickRandomMemory();
+      const id = idCounter++;
+      visibleItems = [...visibleItems, { text, id }];
+  
+      setTimeout(() => {
+        visibleItems = visibleItems.filter(item => item.id !== id);
+      }, 10000);
+    }
+  
+    onMount(() => {
+      console.log("🟢 FloatingStream mounted");
+      console.log("🧠 Logs:", memoryData.logs);
+      console.log("📋 Tasks:", memoryData.todayTasks);
+      console.log("🎯 Focus:", memoryData.focusItems);
+
+      addFloatingItem();
+      const interval = setInterval(addFloatingItem, 3000);
+      return () => clearInterval(interval);
+    });
+  </script>
+  
+  <style>
+    .stream-container {
+      position: fixed;
+      top: 10vh;
+      width: 100vw;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 9999;
+    }
+  
+    .floating-text {
+      position: absolute;
+      left: 100vw;
+      white-space: nowrap;
+      font-family: 'Fira Code', monospace;
+      font-size: 1rem;
+      color: rgba(0, 255, 255, 0.75);
+      text-shadow: 0 0 6px rgba(0, 255, 255, 0.8);
+      animation: scroll-left 12s linear forwards;
+    }
+  
+    @keyframes scroll-left {
+      from { left: 100vw; top: calc(5vh + 50px * var(--i)); }
+      to { left: -100%; top: calc(5vh + 50px * var(--i)); }
+    }
+  </style>
+  
+  <div class="stream-container">
+    {#each visibleItems as item, i (item.id)}
+      <div class="floating-text" style="--i: {i}">{item.text}</div>
+    {/each}
+  </div>
+  <script>
+  let note = '';
+  function save() {
+    if (!note.trim()) return;
+    const logs = JSON.parse(localStorage.getItem('journalLogs') || '[]');
+    logs.push({ text: note, time: new Date().toISOString() });
+    localStorage.setItem('journalLogs', JSON.stringify(logs));
+    note = '';
+  }
+</script>
+<div class="widget">
+  <p class="widget-label">📝 Journal</p>
+  <textarea rows="3" bind:value={note} placeholder="Thoughts..."></textarea>
+  <button on:click={save}>Save</button>
+</div>
+<style>
+:global(.widget textarea) {
+  width: 100%; background: #0d1117; color: #00ffee; border: none;
+  padding: .5rem; border-radius: .25rem; font-family: monospace;
+}
+:global(.widget button) {
+  margin-top: .5rem; background: cyan; color: black;
+  border: none; padding: .5rem 1rem; border-radius: .25rem;
+  font-family: 'Orbitron', monospace; cursor: pointer;
+}
+</style>
+<script>
+  let last = JSON.parse(localStorage.getItem('lastSession') || '{}');
+</script>
+<div class="widget">
+  <p class="widget-label">⏱️ Last Session</p>
+  {#if last.category}
+    <p class="widget-detail">{last.category} • {last.duration}</p>
+  {:else}
+    <p class="widget-detail">No session yet</p>
+  {/if}
+</div>
+<style>
+/* reuse .widget and .widget-label styles from SleepWidget */
+</style>
+<script>
+  export let label = "Progress";
+  export let percent = 0;
+  const r = 58;
+  const circumference = 2 * Math.PI * r;
+  $: capped = percent > 99.5 ? 99.5 : percent;
+  $: dash = (capped / 100) * circumference;
+  $: empty = circumference - dash;
+</script>
+
+<div class="dial-float">
+  <svg viewBox="0 0 160 160" class="dial-svg">
+    <!-- Background ring -->
+    <circle cx="80" cy="80" r="58" class="dial-bg"/>
+    <!-- Foreground glowing arc -->
+     <circle
+    cx="80" cy="80" r="58"
+    class="dial-fg"
+    stroke-dasharray="{dash} {empty}"
+    stroke-linecap="round"
+    style="transform: rotate(-90deg); transform-origin: 50% 50%;"
+  />
+    <text x="85" y="85" class="dial-num">{percent}%</text>
+   
+  </svg>
+  
+  <div class="dial-label">{label}</div>
+</div>
+
+
+<style>
+.dial-float {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  margin: 0 auto;
+}
+.dial-svg {
+  width: 260px;
+  height: 260px;
+  overflow: visible;
+}
+.dial-bg {
+  fill: none;
+  stroke: #164060;
+  stroke-width: 8;
+  opacity: 0.7;
+  filter: blur(0.5px);
+}
+.dial-fg {
+  fill: none;
+  stroke: var(--hud-neon);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.7s cubic-bezier(.2,1,.4,1);
+  filter: drop-shadow(0 0 20px #00ffee) drop-shadow(0 0 44px #00ffee55);
+}
+.dial-num {
+  font-family: 'Orbitron', monospace;
+  fill: #00ffee;
+  font-size: 2.0rem;
+  font-weight: 800;
+  text-anchor: middle;
+  filter: drop-shadow(0 0 7px #00ffeecc);
+  letter-spacing: 0.10em;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: #021213;
+  stroke-width: 1px;
+}
+
+.dial-label {
+  font-family: 'Orbitron', monospace;
+  fill: #3ddbd9;
+  font-size: 1.7rem;
+  font-weight: 600;
+  text-anchor: middle;
+  letter-spacing: 0.18em;
+  filter: drop-shadow(0 0 2px #00ffee55);
+  paint-order: stroke;
+  stroke: #021213;
+  stroke-width: 0.6px;
+}
+
+
+
+</style>
+
+<script lang="ts">
+    import { onDestroy } from 'svelte';
+  
+    export let message: string;
+    export let onClose: () => void;
+  
+    let copied = false;
+    let displayedText = "";
+    let typingInterval: number | null = null;
+    let currentIndex = 0;
+  
+    function copyToClipboard() {
+      navigator.clipboard.writeText(message).then(() => {
+        copied = true;
+        setTimeout(() => copied = false, 1500);
+      });
+    }
+  
+    function startTypewriter(text: string) {
+      // Clear any existing interval
+      if (typingInterval !== null) {
+        clearInterval(typingInterval);
+        typingInterval = null;
+      }
+  
+      displayedText = "";
+      currentIndex = 0;
+  
+      if (!text) return; // Do nothing if the message is empty
+  
+      typingInterval = setInterval(() => {
+        if (currentIndex < text.length) {
+          displayedText += text[currentIndex];
+          currentIndex++;
+        } else {
+          if (typingInterval !== null) {
+            clearInterval(typingInterval);
+            typingInterval = null;
+          }
+        }
+      }, 12); // Adjust typing speed (milliseconds) as needed
+    }
+  
+    // Reactive statement: This block runs whenever 'message' changes
+    $: {
+      if (message) {
+        startTypewriter(message);
+      } else {
+        // Handle empty message case if needed, e.g., clear displayedText
+        displayedText = "";
+        if (typingInterval !== null) {
+          clearInterval(typingInterval);
+          typingInterval = null;
+        }
+      }
+    }
+  
+    // Ensure the interval is cleared when the component is destroyed
+    onDestroy(() => {
+      if (typingInterval !== null) {
+        clearInterval(typingInterval);
+      }
+    });
+  </script>
+  
+  <style>
+  .response-overlay {
+    position: absolute;
+    top: calc(50% - 20vh);
+    left: calc(30% + 6vw);
+    width: 50vw;
+    height: 30vh;
+    padding: 2rem;
+    background: rgba(0, 255, 255, 0.08);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    border-radius: 1.5rem;
+    backdrop-filter: blur(24px) brightness(1.1);
+    -webkit-backdrop-filter: blur(24px) brightness(1.1);
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.3), inset 0 0 30px rgba(0, 255, 255, 0.1);
+    color: #ffffff;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.95rem;
+    animation: fadeIn 0.3s ease-out;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .message-content {
+    white-space: pre-wrap;
+    font-family: 'Fira Code', monospace;
+    font-size: 1rem;
+    line-height: 1.4;
+    overflow-y: auto;
+    max-height: 22vh;
+  }
+  
+  .buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+  }
+  
+  .btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.6);
+    color: #00ffee;
+    border-radius: 0.5rem;
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    font-family: 'Fira Code', monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+  }
+  
+  .btn:hover {
+    background: rgba(0, 255, 255, 0.2);
+    transform: scale(1.05);
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  </style>
+  
+  <div class="response-overlay">
+    <div class="message-content">{message}</div>
+  
+    <div class="buttons">
+      <button class="btn" on:click={copyToClipboard}>
+        {#if copied}Copied{:else}Copy{/if}
+      </button>
+      <button class="btn" on:click={onClose}>Close</button>
+    </div>
+  </div>
+  <script>
+  let sleepHours = localStorage.getItem('sleepHours') || '';
+  function save() { localStorage.setItem('sleepHours', sleepHours); }
+</script>
+<div class="widget">
+  <p class="widget-label">🌙 Sleep (hrs)</p>
+  <input type="number" min="0" step="0.1" bind:value={sleepHours} on:change={save} />
+  <p class="widget-detail">Logged: {sleepHours || '—'}</p>
+</div>
+<style>
+:global(.widget) {
+  width: 14rem; background: #1e293b; padding: 1rem;
+  border-radius: .5rem; box-shadow: 0 0 .5rem rgba(0,255,255,0.2);
+  display: flex; flex-direction: column; align-items: center;
+}
+:global(.widget-label) {
+  font-family: 'Orbitron', monospace; color: #3ddbd9; margin-bottom: .5rem;
+}
+:global(.widget input) {
+  width: 100%; background: #0d1117; color: #00ffee; border: none;
+  padding: .5rem; border-radius: .25rem; text-align: center;
+}
+:global(.widget-detail) {
+  color: #aaa; margin-top: .5rem; font-size: .85rem;
+}
+</style>
+<script lang="ts">
+  import { lastJournal, lastSleep, lastActivity, streaks } from '../store';
+</script>
+
+<div class="status-dock">
+  <div class="status-box">📝 {$lastJournal}</div>
+  <div class="status-box">😴 {$lastSleep}</div>
+  <div class="status-box">🧠 {$lastActivity}</div>
+  <div class="status-box">🔥 Digital: {$streaks.digital} days</div>
+  <div class="status-box">⚡ Analog: {$streaks.analog} days</div>
+  <div class="status-box">🚀 Project: {$streaks.project} days</div>
+</div>
+
+<style>
+  .status-dock {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 3rem;
+    margin-bottom: 2.5rem;
+    padding: 0 2rem;
+    z-index: 2;
+    position: relative;
+  }
+
+  .status-box {
+    position: relative;
+    background: rgba(0, 255, 238, 0.025);
+    border: 1px solid #00ffee44;
+    color: #00ffee;
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    padding: 0.6rem 1.5rem;
+    clip-path: polygon(
+      8px 0%, calc(100% - 8px) 0%, 100% 8px,
+      100% calc(100% - 8px), calc(100% - 8px) 100%,
+      8px 100%, 0% calc(100% - 8px), 0% 8px
+    );
+    box-shadow: 0 0 6px #00ffee33;
+    transition: box-shadow 0.3s ease, background 0.3s ease;
+    backdrop-filter: blur(3px);
+    white-space: nowrap;
+  }
+
+  .status-box:hover {
+    background: rgba(0, 255, 238, 0.06);
+    box-shadow: 0 0 8px #00ffee77;
+  }
+</style>
+<script lang="ts">
+  import { streaks } from '../store';
+</script>
+
+  <div class="bottom-widget streak-widget">
+    <div class="streak-box">🔥 Digital: {$streaks.digital} days</div>
+    <div class="streak-box">⚡ Analog: {$streaks.analog} days</div>
+    <div class="streak-box">🚀 Project: {$streaks.project} days</div>
+  </div>
+  
+
+  <style>
+    .streak-widget {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 1.5rem;
+    }
+  
+    .streak-box {
+      padding: 0.75rem 1.2rem;
+      background: rgba(0, 255, 238, 0.05);
+      border: 1px solid #00ffee88;
+      color: #00ffee;
+      font-family: 'Orbitron', monospace;
+      font-size: 1.2rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 0 6px #00ffee66;
+      backdrop-filter: blur(3px);
+      min-width: 140px;
+      text-align: center;
+    }
+  </style>
+  <script lang="ts">
+  import { sendToPerplexity } from '../ai/perplexity';
+  import ResponseLeaf from './ResponseLeaf.svelte';
+  import { welcomeText } from '../store';
+  import { routeCommand } from '../CommandRouter'; // <-- import this
+
+  let userInput = "";
+  let aiMessage = "";
+  let showResponse = false;
+
+ 
+ async function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter' && userInput.trim()) {
+    showResponse = true;
+    aiMessage = "Processing...";
+
+    try {
+      const response = await routeCommand(userInput); // <-- use this instead of sendToPerplexity
+      aiMessage = response;
+    } catch (err) {
+      aiMessage = "Error: " + err.message;
+    }
+
+    userInput = "";
+  }
+}
+
+</script>
+
+
+<div class="welcome-portal">
+  <div class="portal-core">
+    <h1 class="welcome-heading">{$welcomeText}</h1>
+    <p class="mission-subtext">"The day is yours. Build, reflect, evolve."</p>
+
+    <!-- Embedded Input Instead of CommandBox -->
+    <div class="command-slot">
+      <input
+        type="text"
+        bind:value={userInput}
+        on:keydown={handleKeydown}
+        placeholder="> Ask anything..."
+        class="terminal-input"
+      />
+    </div>
+
+    <div class="status-indicators">
+      <span>🧠 GPU Project: Active</span>
+      <span>🔥 Streak: 3d</span>
+    </div>
+  </div>
+</div>
+
+{#if showResponse}
+  <ResponseLeaf message={aiMessage} onClose={() => showResponse = false} />
+{/if}
+
+<style>
+  .welcome-portal {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding-top: 2.5rem;
+    z-index: 10;
+  }
+
+  .portal-core {
+    padding: 2rem 2rem 1.5rem;
+    max-width: 420px;
+    background: rgba(0, 255, 238, 0.03);
+    border: 1px solid #00ffee33;
+    clip-path: polygon(12px 0%, calc(100% - 12px) 0%, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0% calc(100% - 12px), 0% 12px);
+    box-shadow: 0 0 18px #00ffee44, 0 0 30px #00ffee22 inset;
+    backdrop-filter: blur(4px) saturate(140%);
+    color: #00ffee;
+    font-family: 'Orbitron', monospace;
+    text-align: center;
+  }
+
+  .welcome-heading {
+    font-size: 1.7rem;
+    margin-bottom: 0.7rem;
+    color: #00ffee;
+    letter-spacing: 0.07em;
+  }
+
+  .mission-subtext {
+    font-size: 1.05rem;
+    color: #bffcff;
+    opacity: 0.8;
+    margin-bottom: 1.6rem;
+  }
+
+  .command-slot {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    width: 100%;
+    padding: 0.7rem 1.0rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .terminal-input {
+    background: transparent;
+    color: #00ffee;
+    border: none;
+    border-bottom: 1px solid #00ffee66;
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    width: 100%;
+    outline: none;
+  }
+
+  .status-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    font-size: 0.95rem;
+    color: #00ffeebb;
+    opacity: 0.8;
+  }
+</style>

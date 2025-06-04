@@ -1,0 +1,207 @@
+// === STEP 2 ===
+// ✅ DeepSeekScreen.svelte — glue screen complete
+// ✅ Now: ChatWindow.svelte
+
+<!-- src/components/ChatWindow.svelte -->
+<script lang="ts">
+  export let chatLog: { sender: string; content: string }[] = [];
+</script>
+
+<div class="chat-window">
+  {#each chatLog as message}
+    <div class={`message ${message.sender}`}>
+      <strong>{message.sender === 'user' ? '🧑' : '🤖'}:</strong>
+      <span>{message.content}</span>
+    </div>
+  {/each}
+</div>
+
+<style>
+  .chat-window {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    color: #e0f7fa;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+  }
+
+  .message.user {
+    align-self: flex-end;
+    background: rgba(0, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    max-width: 70%;
+    backdrop-filter: blur(3px);
+  }
+
+  .message.deepseek {
+    align-self: flex-start;
+    background: rgba(100, 255, 180, 0.08);
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    max-width: 70%;
+    backdrop-filter: blur(3px);
+  }
+</style>
+<script lang="ts">
+  import ChatWindow from './ChatWindow.svelte';
+  import ThoughtBox from './ThoughtBox.svelte';
+  import InputBar from './InputBar.svelte';
+  import { streamFromDeepSeek } from '../llm';
+
+  let chatLog: { sender: string; content: string }[] = [];
+  let thought = "";
+  let showThought = false;
+
+  async function handlePromptSubmit(prompt: string) {
+    chatLog.push({ sender: "user", content: prompt });
+
+    let finalAnswer = "";
+    showThought = false;
+    thought = "";
+
+    await streamFromDeepSeek(
+      prompt,
+      (chunk) => {
+        if (chunk.startsWith("THINK:")) {
+          thought = chunk.replace("THINK:", "");
+          showThought = true;
+        } else if (chunk.startsWith("CHAT:")) {
+          finalAnswer += chunk.replace("CHAT:", "");
+        }
+      },
+      (final) => {
+        showThought = false;
+        thought = "";
+        chatLog.push({ sender: "deepseek", content: final.trim() });
+      }
+    );
+  }
+</script>
+
+<div class="deepseek-screen">
+  <ChatWindow {chatLog} />
+  {#if showThought}
+    <ThoughtBox content={thought} />
+  {/if}
+  <InputBar on:submit={(e) => handlePromptSubmit(e.detail)} />
+</div>
+
+<style>
+  .deepseek-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    padding: 1rem;
+    position: relative;
+  }
+</style>
+// === STEP 2 ===
+// ✅ DeepSeekScreen.svelte — glue screen complete
+// ✅ ChatWindow.svelte — message bubbles
+// ✅ ThoughtBox.svelte — floating thought stream
+// ✅ Now: InputBar.svelte — pill-shaped input bar
+
+<!-- src/components/InputBar.svelte -->
+<script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
+
+  let userInput = "";
+
+  function handleSubmit() {
+    if (userInput.trim()) {
+      dispatch('submit', userInput);
+      userInput = "";
+    }
+  }
+</script>
+
+<div class="input-container">
+  <input
+    bind:value={userInput}
+    type="text"
+    class="input-bar"
+    placeholder="Ask DeepSeek anything..."
+    on:keydown={(e) => e.key === 'Enter' && handleSubmit()}
+  />
+</div>
+
+<style>
+  .input-container {
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+  }
+
+  .input-bar {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 2rem;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    background: rgba(0, 255, 255, 0.05);
+    color: #ccffff;
+    font-family: 'JetBrains Mono', monospace;
+    outline: none;
+    box-shadow: 0 0 8px #00ffff44 inset;
+  }
+
+  .input-bar::placeholder {
+    color: #88ccccaa;
+  }
+</style>
+// === STEP 2 ===
+// ✅ DeepSeekScreen.svelte — glue screen complete
+// ✅ ChatWindow.svelte — message bubbles
+// ✅ Now: ThoughtBox.svelte — floating thought stream
+
+<!-- src/components/ThoughtBox.svelte -->
+<script lang="ts">
+  export let content: string = "";
+</script>
+
+<div class="thought-box">
+  <div class="thought-content">
+    <strong>🤔 Thinking...</strong>
+    <p>{content}</p>
+  </div>
+</div>
+
+<style>
+  .thought-box {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    max-width: 300px;
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 1rem;
+    padding: 1rem;
+    color: #ccffee;
+    font-family: 'JetBrains Mono', monospace;
+    box-shadow: 0 0 10px #00ffff44;
+    backdrop-filter: blur(10px);
+    animation: pulse 1.5s infinite ease-in-out;
+    z-index: 1000;
+  }
+
+  .thought-content p {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.02); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.9; }
+  }
+</style>
