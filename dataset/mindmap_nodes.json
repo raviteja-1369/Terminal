@@ -1,0 +1,20 @@
+[
+  {
+    "id": "me_binary_units",
+    "type": "concept",
+    "title": "Bit to Word — My Own Definitions",
+    "definition": "A bit is a binary digit representing 0 or 1. Eight bits form a byte, and multiple bytes can form a word depending on architecture.",
+    "tags": ["core"],
+    "linked_dataset_ids": ["digi_001"],
+    "links_to": ["me_weighted_vs_nonweighted"]
+  },
+  {
+    "id": "me_weighted_vs_nonweighted",
+    "type": "concept",
+    "title": "Weighted vs Non-weighted Codes",
+    "definition": "Weighted codes assign positional weights to bits (e.g., BCD) while non-weighted codes like Gray code do not.",
+    "tags": ["digital"],
+    "linked_dataset_ids": [],
+    "links_to": ["me_binary_units"]
+  }
+]
