@@ -28,5 +28,5 @@
    * Use global.d.ts instead of compilerOptions.types
    * to avoid limiting type declarations.
    */
-  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.svelte", "proxy.js", "proxy.js"]
+  "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.svelte", "proxy.js", "proxy.js", "src/lib/server/parser.cjs", "src/lib/server/parser.cjs"]
 }

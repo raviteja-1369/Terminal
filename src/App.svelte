@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { appMode } from './lib/store';
   import HUDMain from './lib/HUDMain.svelte';
-  //import DeepSeekScreen from './lib/deepseek/DeepSeekScreen.svelte';
+  import ProjectSpacePortal from './lib/ProjectSpace/ProjectSpacePortal.svelte';
 
   let showDeepSeek = false;
 </script>
@@ -8,6 +9,9 @@
 {#if showDeepSeek}
   <HUDMain />
 {:else}
-<HUDMain onGotoDeepSeek={() => showDeepSeek = true} />
-
+  {#if $appMode === 'pspace'}
+    <ProjectSpacePortal />
+  {:else}
+    <HUDMain onGotoDeepSeek={() => showDeepSeek = true} />
+  {/if}
 {/if}
