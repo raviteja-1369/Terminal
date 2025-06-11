@@ -1,211 +1,65 @@
 [
   {
-    "module": "FPADD",
-    "file": "FPADD.v",
+    "module": "M",
+    "file": "ansi_example.v",
+    "ports": [
+      {
+        "name": "clk",
+        "direction": "input",
+        "width": "1",
+        "type": "wire",
+        "style": "ansi"
+      },
+      {
+        "name": "data",
+        "direction": "output",
+        "width": "31:0",
+        "type": "wire",
+        "style": "ansi"
+      }
+    ],
+    "instances": [],
+    "parameters": [],
+    "range": {
+      "start": 0,
+      "end": 4
+    }
+  },
+  {
+    "module": "top",
+    "file": "instance_example.v",
     "ports": [],
     "instances": [],
     "parameters": [],
     "range": {
       "start": 0,
-      "end": 214
+      "end": 3
     }
   },
   {
-    "module": "exponentAdder",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 217,
-      "end": 255
-    }
-  },
-  {
-    "module": "PSL",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 258,
-      "end": 279
-    }
-  },
-  {
-    "module": "alignAsb",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 282,
-      "end": 334
-    }
-  },
-  {
-    "module": "significandSelectroMux",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 338,
-      "end": 361
-    }
-  },
-  {
-    "module": "significandAdder",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 364,
-      "end": 421
-    }
-  },
-  {
-    "module": "Sign",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 424,
-      "end": 442
-    }
-  },
-  {
-    "module": "psl_one",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 445,
-      "end": 483
-    }
-  },
-  {
-    "module": "GRS",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 486,
-      "end": 519
-    }
-  },
-  {
-    "module": "sumResultSelector",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 521,
-      "end": 547
-    }
-  },
-  {
-    "module": "Sf_add",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 549,
-      "end": 564
-    }
-  },
-  {
-    "module": "OneCom",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 567,
-      "end": 584
-    }
-  },
-  {
-    "module": "LOP",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 587,
-      "end": 611
-    }
-  },
-  {
-    "module": "ExpAdj",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 614,
-      "end": 657
-    }
-  },
-  {
-    "module": "normalizationShift",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 660,
-      "end": 675
-    }
-  },
-  {
-    "module": "resultSelector",
-    "file": "FPADD.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 678,
-      "end": 693
-    }
-  },
-  {
-    "module": "FPMULDIV",
-    "file": "FPMULDIV.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 1,
-      "end": 95
-    }
-  },
-  {
-    "module": "LUT",
-    "file": "LUT.v",
-    "ports": [],
-    "instances": [],
-    "parameters": [],
-    "range": {
-      "start": 1,
-      "end": 81
-    }
-  },
-  {
-    "module": "MANT_MUL_DIV",
-    "file": "MANT_MUL_DIV.v",
-    "ports": [],
+    "module": "M",
+    "file": "legacy_example.v",
+    "ports": [
+      {
+        "name": "clk",
+        "direction": "input",
+        "width": "1",
+        "type": "wire",
+        "style": "traditional"
+      },
+      {
+        "name": "data",
+        "direction": "output",
+        "width": "31:0",
+        "type": "wire",
+        "style": "traditional"
+      }
+    ],
     "instances": [],
     "parameters": [],
     "range": {
       "start": 0,
-      "end": 76
+      "end": 4
     }
   }
 ]

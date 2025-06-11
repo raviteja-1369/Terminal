@@ -2,20 +2,43 @@
 import { workerData, parentPort } from 'worker_threads';
 import fs from 'fs';
 import path from 'path';
-import Parser from 'tree-sitter';
 import { createRequire } from 'module';
+import * as WebTreeSitter from 'web-tree-sitter';
 
 const require = createRequire(import.meta.url);
-const Verilog = require('../../parsers/tree-sitter-verilog');
+let wasmPath;
+try {
+  wasmPath = require.resolve('../../parsers/tree-sitter-verilog.wasm');
+} catch {
+  wasmPath = require.resolve('tree-sitter-verilog/verilog.wasm');
+}
 
-const parser = new Parser();
+await WebTreeSitter.Parser.init();
+const Verilog = await WebTreeSitter.Language.load(wasmPath);
+const parser = new WebTreeSitter.Parser();
 parser.setLanguage(Verilog);
+
+/**
+ * Recursively dump a Tree-sitter AST for debugging
+ */
+function dumpTree(node, indent = 0) {
+  const padding = ' '.repeat(indent);
+  console.log(padding + node.type + (node.isNamed() ? '' : ' (anon)') + `: "${node.text}"`);
+  for (let i = 0; i < node.namedChildCount; i++) {
+    dumpTree(node.namedChild(i), indent + 2);
+  }
+}
 
 /**
  * Enhanced Verilog parser that properly extracts design hierarchy
  */
 function parseVerilogFile(src, fileName) {
   const tree = parser.parse(src);
+  // Optional debugging: dump the AST for specific files
+  if (fileName && fileName.includes('FPADD')) {
+    console.log('=== DEBUG AST ===');
+    dumpTree(tree.rootNode);
+  }
   const modules = [];
   const seenModules = new Set(); // Prevent duplicates
 
@@ -153,8 +176,11 @@ function parsePortDeclaration(portNode, style) {
   // Extract width/range
   const width = extractWidth(portNode);
   
-  // Extract port names
-  const identifiers = portNode.descendantsOfType('identifier');
+  // Extract port names (port_identifier or identifier)
+  const identifiers = [
+    ...portNode.descendantsOfType('port_identifier'),
+    ...portNode.descendantsOfType('identifier')
+  ];
   identifiers.forEach(id => {
     ports.push({
       name: id.text,
@@ -173,14 +199,20 @@ function parsePortDeclaration(portNode, style) {
  */
 function extractPortDirection(portNode) {
   const directions = ['input', 'output', 'inout'];
-  
+
   // Check direct children
   for (let i = 0; i < portNode.childCount; i++) {
     const child = portNode.child(i);
     if (directions.includes(child.text)) {
       return child.text;
     }
+    if (child.type === 'port_direction' && directions.includes(child.text)) {
+      return child.text;
+    }
   }
+
+  const fieldDir = portNode.childForFieldName('direction');
+  if (fieldDir && directions.includes(fieldDir.text)) return fieldDir.text;
   
   // Check in text content
   const text = portNode.text.toLowerCase();
@@ -195,12 +227,16 @@ function extractPortDirection(portNode) {
  * Extract port width/range
  */
 function extractWidth(node) {
-  // Look for range expressions [31:0]
-  const ranges = node.descendantsOfType('range');
+  // Look for range expressions [31:0] / [WIDTH-1:0]
+  const ranges = [
+    ...node.descendantsOfType('range'),
+    ...node.descendantsOfType('range_expression'),
+    ...node.descendantsOfType('constant_range')
+  ];
   if (ranges.length > 0) {
     return ranges[0].text;
   }
-  
+
   // Look for packed dimensions
   const packedDims = node.descendantsOfType('packed_dimension');
   if (packedDims.length > 0) {
@@ -215,14 +251,17 @@ function extractWidth(node) {
  */
 function extractPortType(portNode) {
   const types = ['wire', 'reg', 'logic', 'bit'];
-  
+
   for (let i = 0; i < portNode.childCount; i++) {
     const child = portNode.child(i);
     if (types.includes(child.text)) {
       return child.text;
     }
   }
-  
+
+  const dataType = portNode.childForFieldName('data_type');
+  if (dataType && types.includes(dataType.text)) return dataType.text;
+
   return 'wire'; // Default
 }
 
@@ -311,29 +350,31 @@ function extractInstanceParameters(instNode) {
  * Extract port connections for instance
  */
 function extractPortConnections(instNode) {
-  const connections = {};
-  
+  const named = {};
+  const positional = [];
+
   // Named port connections (.port(signal))
   const namedConns = instNode.descendantsOfType('named_port_connection');
   namedConns.forEach(conn => {
     const portName = conn.childForFieldName('port')?.text;
     const signalName = extractConnectionSignal(conn);
-    
+
     if (portName && signalName) {
-      connections[portName] = signalName;
+      named[portName] = signalName;
     }
   });
 
   // Ordered port connections (positional)
   const orderedConns = instNode.descendantsOfType('ordered_port_connection');
-  orderedConns.forEach((conn, index) => {
+  orderedConns.forEach(conn => {
     const signalName = extractConnectionSignal(conn);
     if (signalName) {
-      connections[`port_${index}`] = signalName;
+      positional.push(signalName);
     }
   });
 
-  return connections;
+  if (Object.keys(named).length > 0) return named;
+  return positional;
 }
 
 /**
@@ -343,6 +384,9 @@ function extractConnectionSignal(connNode) {
   // Try expression field
   const expr = connNode.childForFieldName('expression');
   if (expr) return expr.text;
+
+  const sig = connNode.childForFieldName('signal');
+  if (sig) return sig.text;
   
   // Look for identifiers
   const identifiers = connNode.descendantsOfType('identifier');
