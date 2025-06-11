@@ -19,7 +19,6 @@
     "lucide-svelte": "^0.513.0",
     "monaco-editor": "^0.52.2",
     "node-fetch": "^3.3.2",
-    "tree-sitter": "^0.25.0",
-    "tree-sitter-verilog": "^1.0.0"
+    "tree-sitter": "^0.25.0"
   }
 }
